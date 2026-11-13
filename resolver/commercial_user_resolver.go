@@ -144,8 +144,10 @@ func (ur *UserResolver) FetchAllUsers(p graphql.ResolveParams) *model.DcddGeneri
     } else {
         input.Offset = 0
     }
+    input.SearchBy, _ = p.Args["search_by"].(string)
+    input.Search, _ = p.Args["search"].(string)
 
-    users, totalCount, err := ur.Services.GetAllDcddUsers(input.Limit, input.Offset)
+    users, totalCount, err := ur.Services.GetAllDcddUsers(input.Limit, input.Offset, input.SearchBy, input.Search)
     if err != nil {
         return helpers.FormatError(err)
     }

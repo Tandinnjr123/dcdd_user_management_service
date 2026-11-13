@@ -75,8 +75,12 @@ func (as *UserService) UpdateDcddUserStatus(ctx context.Context, userID uuid.UUI
 	return as.Repository.UpdateDcddUserStatus(ctx, userID, status)
 }
 
-func (as *UserService) GetAllDcddUsers(limit, offset int) ([]model.DcddUser, int, error) {
-	return as.Repository.FetchAllDcddUsers(limit, offset)
+func (as *UserService) FetchUserActivityReport(filter model.UserActivityFilter) ([]model.UserActivityReportRow, int, error) {
+	return as.Repository.FetchUserActivityReport(filter)
+}
+
+func (as *UserService) GetAllDcddUsers(limit, offset int, searchBy, search string) ([]model.DcddUser, int, error) {
+	return as.Repository.FetchAllDcddUsers(limit, offset, searchBy, search)
 }
 
 func (as *UserService) GetAllActiveDcddUsers(limit, offset int) ([]model.DcddUser, int, error) {
