@@ -253,52 +253,45 @@ func (repo *UserRepository) GetAllActiveDcddUsers(limit, offset int) ([]model.Dc
 	return users, int(totalCount), nil
 }
 
+// FetchDcddUsersByDateRange lists users registered on the given days (inclusive, Bhutan time) with
+// their profiles, newest first. Password hashes are cleared before returning.
 func (repo *UserRepository) FetchDcddUsersByDateRange(fromDate, toDate time.Time) ([]model.DcddUserAndProfile, error) {
-    fromDate = fromDate.UTC()
-    toDate = toDate.Add(23*time.Hour + 59*time.Minute + 59*time.Second).UTC()
+    r := newReportRange(&fromDate, &toDate)
 
     var users []model.DcddUser
     if err := repo.DB.
-        Where("created_at BETWEEN ? AND ?", fromDate, toDate).
+        Where("created_at >= ? AND created_at < ?", r.newFrom, r.to).
+        Order("created_at DESC").
         Find(&users).Error; err != nil {
         return nil, fmt.Errorf("failed to fetch users between %v and %v: %w", fromDate, toDate, err)
     }
-
     if len(users) == 0 {
         return []model.DcddUserAndProfile{}, nil
     }
 
-    fmt.Println(len(users))
-
-    //Collect user IDs
-    userIDs := make([]uuid.UUID, len(users))
-    for i, u := range users {
-        userIDs[i] = u.ID
+    // Profiles are fetched in batches: Postgres allows at most 65535 parameters per query.
+    const batchSize = 10000
+    profileMap := make(map[uuid.UUID]*model.UserProfile, len(users))
+    for start := 0; start < len(users); start += batchSize {
+        end := min(start+batchSize, len(users))
+        userIDs := make([]uuid.UUID, 0, end-start)
+        for _, u := range users[start:end] {
+            userIDs = append(userIDs, u.ID)
+        }
+        var profiles []model.UserProfile
+        if err := repo.DB.Where("user_id IN ?", userIDs).Find(&profiles).Error; err != nil {
+            return nil, fmt.Errorf("failed to fetch profiles: %w", err)
+        }
+        for i := range profiles {
+            profileMap[profiles[i].UserId] = &profiles[i]
+        }
     }
 
-    //Fetch profiles by user_id
-    var profiles []model.UserProfile
-    if err := repo.DB.
-        Where("user_id IN ?", userIDs).
-        Find(&profiles).Error; err != nil {
-        return nil, fmt.Errorf("failed to fetch profiles: %w", err)
+    results := make([]model.DcddUserAndProfile, len(users))
+    for i := range users {
+        users[i].Password = ""
+        results[i] = model.DcddUserAndProfile{User: &users[i], UserProfile: profileMap[users[i].ID]}
     }
-
-    //Map profiles to their user_id
-    profileMap := make(map[uuid.UUID]*model.UserProfile)
-    for i, p := range profiles {
-        profileMap[p.UserId] = &profiles[i]
-    }
-
-    //Combine into DcddUserAndProfile
-    var results []model.DcddUserAndProfile
-    for _, u := range users {
-        results = append(results, model.DcddUserAndProfile{
-            User:        &u,
-            UserProfile: profileMap[u.ID],
-        })
-    }
-
     return results, nil
 }
 
@@ -603,107 +596,61 @@ func (repo *UserRepository) FetchEccd(ctx context.Context, DzonghkhagId uuid.UUI
 	return eccds, nil
 }
 
+// GetDcddUserTotals counts DCDD users for the report cards, narrowed by dzongkhag, school, ECCD and
+// category. Total is everyone registered by the end of the range; active is those of them who
+// logged in or used the app in the range (any time without a range); inactive is the rest; new is
+// those registered in the range, or in the last 30 days without one. App activity is recorded per
+// month, so it counts for the whole month. Returns total, active, new, inactive.
 func (repo *UserRepository) GetDcddUserTotals(fromDate, toDate *time.Time, school_id, eccd_id, dzongkhag_id *uuid.UUID, category *string) (totalAll int, totalActive int, totalNew int, totalInActive int, err error) {
-    var totalAllCount int64
-    var totalActiveCount int64
-    var totalInActiveCount int64
-    var totalNewCount int64
+    r := newReportRange(fromDate, toDate)
+    args := map[string]interface{}{"active_from": r.activeFrom, "new_from": r.newFrom, "to": r.to}
 
-    var fromUTC, toUTC time.Time
-    var dateFilter bool
-    if fromDate != nil && toDate != nil {
-        fromUTC = fromDate.UTC()
-        toUTC = toDate.Add(23*time.Hour + 59*time.Minute + 59*time.Second).UTC()
-        dateFilter = true
+    filters := ""
+    profileFilters := []string{}
+    if dzongkhag_id != nil {
+        profileFilters = append(profileFilters, "up.dzongkhag_id = @dzongkhag_id")
+        args["dzongkhag_id"] = *dzongkhag_id
     }
-
-    needJoinProfile := dzongkhag_id != nil || school_id != nil || eccd_id != nil
-
-    baseQuery := repo.DB.Model(&model.DcddUser{})
-
-    if needJoinProfile {
-        baseQuery = baseQuery.Joins("JOIN dcdd_user_data.dcdd_user_profiles up ON up.user_id = dcdd_auth.dcdd_users.id")
-        
-        if dzongkhag_id != nil {
-            baseQuery = baseQuery.Where("up.dzongkhag_id = ?", *dzongkhag_id)
-        }
-        if school_id != nil {
-            baseQuery = baseQuery.Where("up.school_id = ?", *school_id)
-        }
-        if eccd_id != nil {
-            baseQuery = baseQuery.Where("up.eccd_id = ?", *eccd_id)
-        }
+    if school_id != nil {
+        profileFilters = append(profileFilters, "up.school_id = @school_id")
+        args["school_id"] = *school_id
     }
-    
+    if eccd_id != nil {
+        profileFilters = append(profileFilters, "up.eccd_id = @eccd_id")
+        args["eccd_id"] = *eccd_id
+    }
+    if len(profileFilters) > 0 {
+        filters += " AND EXISTS (SELECT 1 FROM dcdd_user_data.dcdd_user_profiles up WHERE up.user_id = u.id AND " +
+            strings.Join(profileFilters, " AND ") + ")"
+    }
     if category != nil {
-        baseQuery = baseQuery.Where("dcdd_auth.dcdd_users.category = ?", *category)
+        filters += " AND u.category = @category"
+        args["category"] = *category
     }
 
-    if dateFilter {
-        baseQuery = baseQuery.Where("dcdd_auth.dcdd_users.created_at BETWEEN ? AND ?", fromUTC, toUTC)
+    var counts struct {
+        TotalAll    int
+        TotalActive int
+        TotalNew    int
     }
-
-    if err := baseQuery.Count(&totalAllCount).Error; err != nil {
-        return 0, 0, 0, 0, fmt.Errorf("failed to count total users: %w", err)
+    err = repo.DB.Raw(`
+        SELECT COUNT(*) AS total_all,
+            COUNT(*) FILTER (WHERE
+                EXISTS (SELECT 1 FROM dcdd_auth.dcdd_access_tokens t
+                    WHERE t.user_id = u.id AND t.created_at >= @active_from AND t.created_at < @to)
+                OR EXISTS (SELECT 1 FROM dcdd_auth.dcdd_user_activities a
+                    WHERE a.user_id = u.id
+                    AND (make_date(a.year, a.month, 1) + interval '1 month') AT TIME ZONE 'Asia/Thimphu' > @active_from
+                    AND make_date(a.year, a.month, 1)::timestamp AT TIME ZONE 'Asia/Thimphu' < @to)
+            ) AS total_active,
+            COUNT(*) FILTER (WHERE u.created_at >= @new_from AND u.created_at < @to) AS total_new
+        FROM dcdd_auth.dcdd_users u
+        WHERE u.created_at < @to`+filters, args).
+        Scan(&counts).Error
+    if err != nil {
+        return 0, 0, 0, 0, fmt.Errorf("failed to count users: %w", err)
     }
-
-    activeSub := repo.DB.Model(&model.UserActivity{}).Select("DISTINCT user_id")
-    if dateFilter {
-        activeSub = activeSub.Where("dcdd_auth.dcdd_user_activities.created_at BETWEEN ? AND ?", fromUTC, toUTC)
-    }
-
-    activeQuery := repo.DB.Model(&model.DcddUser{}).Where("dcdd_auth.dcdd_users.id IN (?)", activeSub)
-    
-    if needJoinProfile {
-        activeQuery = activeQuery.Joins("JOIN dcdd_user_data.dcdd_user_profiles up ON up.user_id = dcdd_auth.dcdd_users.id")
-        if dzongkhag_id != nil {
-            activeQuery = activeQuery.Where("up.dzongkhag_id = ?", *dzongkhag_id)
-        }
-        if school_id != nil {
-            activeQuery = activeQuery.Where("up.school_id = ?", *school_id)
-        }
-        if eccd_id != nil {
-            activeQuery = activeQuery.Where("up.eccd_id = ?", *eccd_id)
-        }
-    }
-    
-    if category != nil {
-        activeQuery = activeQuery.Where("dcdd_auth.dcdd_users.category = ?", *category)
-    }
-
-    if err := activeQuery.Count(&totalActiveCount).Error; err != nil {
-        return 0, 0, 0, 0, fmt.Errorf("failed to count active users: %w", err)
-    }
-
-    totalInActiveCount = totalAllCount - totalActiveCount
-    if totalInActiveCount < 0 {
-        totalInActiveCount = 0
-    }
-
-    if dateFilter {
-        newQuery := repo.DB.Model(&model.DcddUser{})
-        if needJoinProfile {
-            newQuery = newQuery.Joins("JOIN dcdd_user_data.dcdd_user_profiles up ON up.user_id = dcdd_auth.dcdd_users.id")
-            if dzongkhag_id != nil {
-                newQuery = newQuery.Where("up.dzongkhag_id = ?", *dzongkhag_id)
-            }
-            if school_id != nil {
-                newQuery = newQuery.Where("up.school_id = ?", *school_id)
-            }
-            if eccd_id != nil {
-                newQuery = newQuery.Where("up.eccd_id = ?", *eccd_id)
-            }
-        }        
-        if category != nil {
-            newQuery = newQuery.Where("dcdd_auth.dcdd_users.category = ?", *category)
-        }
-        newQuery = newQuery.Where("dcdd_auth.dcdd_users.created_at BETWEEN ? AND ?", fromUTC, toUTC)
-        if err := newQuery.Count(&totalNewCount).Error; err != nil {
-            return 0, 0, 0, 0, fmt.Errorf("failed to count new registrations: %w", err)
-        }
-    }
-
-    return int(totalAllCount), int(totalActiveCount), int(totalNewCount), int(totalInActiveCount), nil
+    return counts.TotalAll, counts.TotalActive, counts.TotalNew, counts.TotalAll - counts.TotalActive, nil
 }
 
 func (repo *UserRepository) GetUserActivity(offset, limit int) ([]model.UserActivity, error) {
