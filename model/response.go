@@ -28,7 +28,8 @@ type DcddGenericUserResponse struct {
 }
 
 type DcddUserProfileResult struct {
-	UserProfile *UserProfile `json:"user_profile"`
+	UserProfile *UserProfile    `json:"user_profile"`
+	Membership  *DcddMembership `json:"membership"`
 }
 
 type FetchAllDcddActiveUsersResult struct{

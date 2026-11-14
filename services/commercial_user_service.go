@@ -71,6 +71,10 @@ func (as *UserService) FetchProfileByDcddUserId(ctx context.Context, userID uuid
     return as.Repository.FetchProfileByDcddUserId(ctx, userID)
 }
 
+func (as *UserService) FetchDcddMembership(ctx context.Context) (*model.DcddMembership, error) {
+    return as.Repository.FetchDcddMembership(ctx)
+}
+
 func (as *UserService) UpdateDcddUserStatus(ctx context.Context, userID uuid.UUID, status string) (*model.DcddUser, error) {
 	return as.Repository.UpdateDcddUserStatus(ctx, userID, status)
 }

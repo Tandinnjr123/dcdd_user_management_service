@@ -185,6 +185,28 @@ func (repo *UserRepository) FetchProfileByDcddUserId(ctx context.Context, userId
     }
     return &profile, nil
 }
+// FetchDcddMembership returns the programme-wide DCDD membership, or nil when none is set up or
+// the dcdd_membership tables are not in this service's database.
+func (repo *UserRepository) FetchDcddMembership(ctx context.Context) (*model.DcddMembership, error) {
+    var exists bool
+    if err := repo.DB.WithContext(ctx).Raw("SELECT to_regclass('dcdd_membership.user_memberships') IS NOT NULL").Scan(&exists).Error; err != nil || !exists {
+        return nil, nil
+    }
+    var memberships []model.DcddMembership
+    err := repo.DB.WithContext(ctx).Table("dcdd_membership.user_memberships").
+        Select("membership_duration_id, membership_join_date, membership_end_date, membership_end_date > now() AS is_active").
+        Order("updated_at DESC").
+        Limit(1).
+        Scan(&memberships).Error
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch membership: %w", err)
+    }
+    if len(memberships) == 0 {
+        return nil, nil
+    }
+    return &memberships[0], nil
+}
+
 func (repo *UserRepository) FetchAllDcddUsers(limit, offset int, searchBy, search string) ([]model.DcddUser, int, error) {
     var total int64
     var users []model.DcddUser

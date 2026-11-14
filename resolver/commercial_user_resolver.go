@@ -124,9 +124,14 @@ func (ur *UserResolver) FetchProfileByDcddUserId(p graphql.ResolveParams) *model
 	if err != nil {
 		return helpers.FormatError(err)
 	}
+	membership, err := ur.Services.FetchDcddMembership(p.Context)
+	if err != nil {
+		return helpers.FormatError(err)
+	}
 	return &model.DcddGenericUserResponse{
 		Data: &model.DcddUserProfileResult{
 			UserProfile: result,
+			Membership:  membership,
 		},
 		Error: nil,
 	}

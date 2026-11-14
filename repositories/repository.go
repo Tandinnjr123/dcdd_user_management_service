@@ -23,6 +23,7 @@ type Repository interface {
 	BulkRegistration(signupInputs []model.SignupInput) (error) 
 
 	FetchProfileByDcddUserId(ctx context.Context, userId uuid.UUID) (*model.UserProfile, error)
+	FetchDcddMembership(ctx context.Context) (*model.DcddMembership, error)
 	FetchDcddUserByLoginID(field, value string) (*model.DcddUser, error)
 	FetchDzongkhag(ctx context.Context) ([]model.Dzongkhag, error)
 	FetchGrade(ctx context.Context) ([]model.Grade, error)

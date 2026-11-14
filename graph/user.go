@@ -89,6 +89,18 @@ var DcddUserProfileResult = graphql.NewObject(graphql.ObjectConfig{
 	Name: "DcddUserProfileResult",
 	Fields: graphql.Fields{
 		"user_profile": &graphql.Field{Type: DcddUserProfile},
+		"membership":   &graphql.Field{Type: DcddMembership},
+	},
+})
+
+// DcddMembership is the programme-wide DCDD membership; null when none is set up.
+var DcddMembership = graphql.NewObject(graphql.ObjectConfig{
+	Name: "DcddMembership",
+	Fields: graphql.Fields{
+		"membership_duration_id": &graphql.Field{Type: scalar.UUID},
+		"membership_join_date":   &graphql.Field{Type: scalar.Time},
+		"membership_end_date":    &graphql.Field{Type: scalar.Time},
+		"is_active":              &graphql.Field{Type: graphql.Boolean},
 	},
 })
 

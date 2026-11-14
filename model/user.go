@@ -148,4 +148,11 @@ type GroupedUserActivity struct {
     User            *DcddUser `json:"user"`            // The preloaded user details
 }
 
-
+// DcddMembership is the programme-wide DCDD membership that every DCDD user is on. IsActive is
+// true while the end date is in the future.
+type DcddMembership struct {
+    MembershipDurationID uuid.UUID `json:"membership_duration_id"`
+    MembershipJoinDate   time.Time `json:"membership_join_date"`
+    MembershipEndDate    time.Time `json:"membership_end_date"`
+    IsActive             bool      `json:"is_active"`
+}
