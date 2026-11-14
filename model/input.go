@@ -47,6 +47,8 @@ type UserProfileInput struct {
 }
 
 type FetchDcddUsersInput struct {
-    Limit  int `json:"limit"`  // e.g., 50
-    Offset int `json:"offset"` // e.g., 0, 50, 100...
+    Limit    int    `json:"limit"`  // e.g., 50
+    Offset   int    `json:"offset"` // e.g., 0, 50, 100...
+    SearchBy string `json:"search_by"` // name, cid, mobile_no or email
+    Search   string `json:"search"`
 }

@@ -5,6 +5,7 @@ import (
     "dcdd_user_management_service/helpers"
 
     "fmt"
+    "strings"
     "time"
     "errors"
     "context"
@@ -184,14 +185,20 @@ func (repo *UserRepository) FetchProfileByDcddUserId(ctx context.Context, userId
     }
     return &profile, nil
 }
-func (repo *UserRepository) FetchAllDcddUsers(limit, offset int) ([]model.DcddUser, int, error) {
+func (repo *UserRepository) FetchAllDcddUsers(limit, offset int, searchBy, search string) ([]model.DcddUser, int, error) {
     var total int64
     var users []model.DcddUser
-    if err := repo.DB.Model(&model.DcddUser{}).Count(&total).Error; err != nil {
+
+    filtered, err := applyUserSearch(repo.DB.Model(&model.DcddUser{}), "dcdd_auth.dcdd_users", searchBy, search)
+    if err != nil {
+        return nil, 0, err
+    }
+
+    if err := filtered.Session(&gorm.Session{}).Count(&total).Error; err != nil {
         return nil, 0, fmt.Errorf("failed to count users: %w", err)
     }
 
-    db := repo.DB.Preload("UserProfile").
+    db := filtered.Preload("UserProfile").
     Preload("UserProfile.Dzongkhag").
     Preload("UserProfile.School").
     Preload("UserProfile.Eccd").
@@ -707,3 +714,37 @@ func (repo *UserRepository) GetUserActivity(offset, limit int) ([]model.UserActi
     return userActivities, nil
 }
 
+
+// applyUserSearch narrows a users query by one field; usersTable is the table or alias holding
+// dcdd_auth.dcdd_users. searchBy is matched against a fixed list so it can never reach the SQL as
+// a column name. Name and email match any part of the value ignoring case; cid and phone must
+// match exactly.
+func applyUserSearch(db *gorm.DB, usersTable, searchBy, search string) (*gorm.DB, error) {
+    search = strings.TrimSpace(search)
+    if search == "" {
+        return db, nil
+    }
+
+    switch searchBy {
+    case "name":
+        return db.Where(usersTable+".id IN (?)", profileUserIDs(db).Where("name ILIKE ?", containsPattern(search))), nil
+    case "cid":
+        return db.Where(usersTable+".id IN (?)", profileUserIDs(db).Where("cid = ?", search)), nil
+    case "email":
+        return db.Where(usersTable+".email ILIKE ?", containsPattern(search)), nil
+    case "mobile_no":
+        return db.Where(usersTable+".mobile_no = ?", search), nil
+    default:
+        return nil, fmt.Errorf("invalid search_by %q: must be one of name, cid, mobile_no, email", searchBy)
+    }
+}
+
+func profileUserIDs(db *gorm.DB) *gorm.DB {
+    return db.Session(&gorm.Session{NewDB: true}).Model(&model.UserProfile{}).Select("user_id")
+}
+
+// containsPattern escapes LIKE wildcards so the value is matched literally.
+func containsPattern(search string) string {
+    escaped := strings.NewReplacer(`\`, `\\`, "%", `\%`, "_", `\_`).Replace(search)
+    return "%" + escaped + "%"
+}
