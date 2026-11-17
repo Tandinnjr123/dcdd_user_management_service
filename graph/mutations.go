@@ -19,7 +19,7 @@ func NewMutationType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("create",resolver.CreateDcddUser))(p), nil
+					return AuthMiddleware(PermissionMiddleware("CREATE_DCDD_USER", resolver.CreateDcddUser))(p), nil
 				},
 			},
 			"updateDcddUser": &graphql.Field{
@@ -33,7 +33,7 @@ func NewMutationType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("update",resolver.UpdateDcddUser))(p), nil
+					return AuthMiddleware(PermissionMiddleware("UPDATE_DCDD_USER", resolver.UpdateDcddUser))(p), nil
 				},
 			},
 			"updateDcddUserPassword": &graphql.Field{
@@ -47,7 +47,7 @@ func NewMutationType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("update",resolver.UpdateDcddUserPassword))(p), nil
+					return AuthMiddleware(PermissionMiddleware("UPDATE_DCDD_USER", resolver.UpdateDcddUserPassword))(p), nil
 				},
 			},
 			"UpdateDcddUserStatus" : &graphql.Field{
@@ -61,7 +61,7 @@ func NewMutationType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("update",resolver.UpdateDcddUserStatus))(p), nil
+					return AuthMiddleware(PermissionMiddleware("UPDATE_DCDD_USER", resolver.UpdateDcddUserStatus))(p), nil
 				},
 			},
 			"bulkRegistration": &graphql.Field{
@@ -72,7 +72,7 @@ func NewMutationType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("create",resolver.BulkRegistration))(p), nil
+					return AuthMiddleware(PermissionMiddleware("CREATE_DCDD_USER", resolver.BulkRegistration))(p), nil
 				},
 			},
 		},

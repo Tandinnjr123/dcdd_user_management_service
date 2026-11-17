@@ -73,7 +73,7 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("list",resolver.FetchAllUsers))(p), nil
+					return AuthMiddleware(PermissionMiddleware("LIST_DCDD_USER", resolver.FetchAllUsers))(p), nil
 				},
 			},
 			"fetchDcddUserActivities": &graphql.Field{
@@ -104,7 +104,7 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					"offset": &graphql.ArgumentConfig{Type: graphql.Int},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("list", resolver.FetchUserActivityReport))(p), nil
+					return AuthMiddleware(PermissionMiddleware("LIST_DCDD_ACTIVE_USER", resolver.FetchUserActivityReport))(p), nil
 				},
 			},
 			"fetchAllActiveDcddUsers": &graphql.Field{
@@ -118,7 +118,7 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("list",resolver.FetchAllActiveUsers))(p), nil
+					return AuthMiddleware(PermissionMiddleware("LIST_DCDD_ACTIVE_USER", resolver.FetchAllActiveUsers))(p), nil
 				},
 			},
 			"FetchDcddUsersByDateRange": &graphql.Field{
@@ -128,7 +128,7 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					"toDate":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					result := AuthMiddleware(PermissionMiddleware("list",resolver.FetchDcddUsersByDateRange))(p)
+					result := AuthMiddleware(PermissionMiddleware("LIST_DCDD_NEW_REGISTRATION", resolver.FetchDcddUsersByDateRange))(p)
 					return result, nil
 				},
 			},
@@ -155,7 +155,7 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
                 },
                 Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-                    return AuthMiddleware(PermissionMiddleware("list", resolver.GetDcddUserTotals))(p), nil
+                    return AuthMiddleware(PermissionMiddleware("LIST_DCDD_USER", resolver.GetDcddUserTotals))(p), nil
                 },
             },
 
@@ -167,7 +167,7 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("list",resolver.FetchSchool))(p), nil
+					return AuthMiddleware(PermissionMiddleware("LIST_DCDD_USER|CREATE_DCDD_USER|UPDATE_DCDD_USER|LIST_DCDD_ACTIVE_USER|LIST_DCDD_NEW_REGISTRATION", resolver.FetchSchool))(p), nil
 				},
 			},
 			"fetchEccd": &graphql.Field{
@@ -178,19 +178,19 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("list",resolver.FetchEccd))(p), nil
+					return AuthMiddleware(PermissionMiddleware("LIST_DCDD_USER|CREATE_DCDD_USER|UPDATE_DCDD_USER|LIST_DCDD_ACTIVE_USER|LIST_DCDD_NEW_REGISTRATION", resolver.FetchEccd))(p), nil
 				},
 			},
 			"fetchDzongkhag": &graphql.Field{
 				Type: DzongkhagResponse,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("list",resolver.FetchDzongkhag))(p), nil
+					return AuthMiddleware(PermissionMiddleware("LIST_DCDD_USER|CREATE_DCDD_USER|UPDATE_DCDD_USER|LIST_DCDD_ACTIVE_USER|LIST_DCDD_NEW_REGISTRATION", resolver.FetchDzongkhag))(p), nil
 				},
 			},
 			"fetchGrade": &graphql.Field{
 				Type: GradeResponse,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("list",resolver.FetchGrade))(p), nil
+					return AuthMiddleware(PermissionMiddleware("LIST_DCDD_USER|CREATE_DCDD_USER|UPDATE_DCDD_USER|LIST_DCDD_ACTIVE_USER|LIST_DCDD_NEW_REGISTRATION", resolver.FetchGrade))(p), nil
 				},
 			},
 			"GetDcddUserActivity": &graphql.Field{
@@ -204,7 +204,7 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return AuthMiddleware(PermissionMiddleware("list", resolver.GetUserActivity))(p), nil
+					return AuthMiddleware(PermissionMiddleware("LIST_DCDD_ACTIVE_USER|LIST_DCDD_USER", resolver.GetUserActivity))(p), nil
 				},
 			},
 		},
