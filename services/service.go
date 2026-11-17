@@ -1,7 +1,7 @@
 package services
 
 import (
-	"dcdd_user_management_service/model"
+	"cms_dcdd_user_management_service/model"
 	
 	"io"
 	"time"

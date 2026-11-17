@@ -1,12 +1,12 @@
 package main
 
 import (
-	"dcdd_user_management_service/handlers"
-	"dcdd_user_management_service/repositories"
-	"dcdd_user_management_service/resolver"
-	"dcdd_user_management_service/services"
-	"dcdd_user_management_service/graph"
-	"dcdd_user_management_service/helpers"
+	"cms_dcdd_user_management_service/handlers"
+	"cms_dcdd_user_management_service/repositories"
+	"cms_dcdd_user_management_service/resolver"
+	"cms_dcdd_user_management_service/services"
+	"cms_dcdd_user_management_service/graph"
+	"cms_dcdd_user_management_service/helpers"
 
 	"log"
 

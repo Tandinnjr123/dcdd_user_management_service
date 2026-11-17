@@ -1,9 +1,9 @@
 package services
 
 import (
-	"dcdd_user_management_service/repositories"
-	"dcdd_user_management_service/model"
-	"dcdd_user_management_service/helpers"
+	"cms_dcdd_user_management_service/repositories"
+	"cms_dcdd_user_management_service/model"
+	"cms_dcdd_user_management_service/helpers"
 
     "time"
 	"fmt"

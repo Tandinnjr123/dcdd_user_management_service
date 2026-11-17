@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"dcdd_user_management_service/graph/scalar"
+	"cms_dcdd_user_management_service/graph/scalar"
 
 	"github.com/graphql-go/graphql"
 )

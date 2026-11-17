@@ -1,10 +1,10 @@
 package schema
 
 import (
-	"dcdd_user_management_service/helpers"
-	"dcdd_user_management_service/model"
-	"dcdd_user_management_service/resolver"
-	"dcdd_user_management_service/graph/scalar"
+	"cms_dcdd_user_management_service/helpers"
+	"cms_dcdd_user_management_service/model"
+	"cms_dcdd_user_management_service/resolver"
+	"cms_dcdd_user_management_service/graph/scalar"
 
 	"github.com/graphql-go/graphql"
 )
@@ -22,7 +22,7 @@ func NewQueryType(resolver *resolvers.UserResolver) *graphql.Object {
 					}
 
 					serviceInfo := model.Service{
-						Name:    "dcddusermanagementservice",
+						Name:    "cms-dcdd-user-management-service",
 						Version: "1.0.0",
 						Schema:  helpers.ConvertSchemaToString(schema),
 					}

@@ -1,9 +1,9 @@
 package resolvers
 
 import (
-	"dcdd_user_management_service/helpers"
-	"dcdd_user_management_service/model"
-	"dcdd_user_management_service/services"
+	"cms_dcdd_user_management_service/helpers"
+	"cms_dcdd_user_management_service/model"
+	"cms_dcdd_user_management_service/services"
 
 	"os"
 	"fmt"

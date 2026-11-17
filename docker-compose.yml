@@ -1,7 +1,7 @@
 services:
-  dcddusermanagementservice:
-    image: cms-dcddusermanagementservice:latest
-    container_name: cms-dcddusermanagementservice
+  cms-dcdd-user-management-service:
+    image: cms-dcdd-user-management-service:latest
+    container_name: cms-dcdd-user-management-service
     build:
       context: .
       dockerfile: Dockerfile

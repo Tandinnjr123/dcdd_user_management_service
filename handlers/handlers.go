@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"dcdd_user_management_service/graph"
+	"cms_dcdd_user_management_service/graph"
 	
 	"context"
 	"encoding/json"
